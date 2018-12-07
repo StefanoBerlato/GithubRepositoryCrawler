@@ -149,7 +149,7 @@ while (total_count > 0 or first_loop):
             exit(1)
 
     # if there was another error
-    elif(r_repo.status_code != 200)
+    elif(r_repo.status_code != 200):
         # print error
         print ("error while searching repositories: " + str(r_repo.status_code))
         print ("exiting...")
