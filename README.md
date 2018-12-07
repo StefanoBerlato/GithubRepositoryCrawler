@@ -1,5 +1,10 @@
 # GithubRepositoryCrawler
-Simple Python tool that wraps Github APIs to download repositories searched by keywords, file and code
+Simple Python tool that wraps Github APIs to download repositories searched by keywords, file and code:
+1. First, it makes a repository search (parameters k = keywords, r = results_per_page, l = result_limit)
+2. Then, for each repository, it performs a code search (parameters code (required), f = file_that_contains_code)
+3. Eventually, it downloads (through `git clone`) the repositories that matches the specified parameters
+
+Rememeber that Github limits the number of requests you can do: to increment this number, specify username (-u) and password (-p)
 
 # Help
 ```
@@ -41,4 +46,8 @@ optional arguments:
 
 # Example Usage
 
-python3 crawler.py com.android.application -u yourUsernameOrEmail -p yourPassword -f build.gradle -k android+app
+### General use
+python3 crawler.py codeToBeSearched -u yourUsernameOrEmail -p yourPassword -f fileWhereToSearchCode -k repoKeywords
+
+### Crawl android open source applications
+python3 crawler.py "apply plugin: 'com.android.application'" -u yourUsernameOrEmail -p yourPassword -f build.gradle -k android+application

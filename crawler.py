@@ -95,12 +95,6 @@ if (args.resultLimit):
         resultLimit = 100
 
 
-
-# logical flow:
-#   for each keyword, do a repository search (parameter q = keyword, page = page_number)
-#       for each repository, do a code search specifying (parameter q = code, repo = repositoryName, filename = filename)
-
-
 # the final result
 android_opensource_app_repositories = []
 
@@ -151,7 +145,7 @@ while (total_count > 0 or first_loop):
             # build the query
             url_code = api_base_url + search_code + "?q=" + code_to_search
             url_code = (url_code + "+filename:" + file_that_contains_code) if (file_that_contains_code != None) else (url_code)
-            url_code = (url_code + "+repo:" + repo_name) if (repo_name != None) else (url_code)
+            url_code = (url_code + "+repo:" + repo_name)
             url_code = (url_code + "+in:file")
 
             # the request made to github to download the file in the repo
@@ -177,8 +171,10 @@ while (total_count > 0 or first_loop):
                 # for each file containing the code (there should be just one but )
                 for item in j_code['items']:
 
-                    # if the file is a 'build.gradle' file and it is at root level
-                    if (item['name'] == file_that_contains_code and item['path'] == file_that_contains_code):
+                    # if the file is the given one and it is at root level
+                    #if (item['name'] == file_that_contains_code and item['path'] == file_that_contains_code):
+                    # if the file is the given one (not necessarily at root level)
+                    if (item['name'] == file_that_contains_code):
 
                         # save the name of the repo
                         android_opensource_app_repositories.append(github_base_url + repo_name)
