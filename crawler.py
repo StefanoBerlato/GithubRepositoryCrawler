@@ -141,7 +141,7 @@ while (total_count > 0 or first_loop):
         # if we have to wait
         if (wait):
             print ("query limit rate exceeded. waiting and retrying...")
-            sleep(waiting_time)
+            time.sleep(waiting_time)
 
         # otherwise exit
         else:
@@ -199,7 +199,7 @@ while (total_count > 0 or first_loop):
                 # if we have to wait, wait
                 if (wait):
                     print ("    query limit rate exceeded. waiting and retrying...")
-                    sleep(waiting_time)
+                    time.sleep(waiting_time)
 
                 # otherwise exit
                 else:
