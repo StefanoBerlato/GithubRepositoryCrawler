@@ -7,6 +7,9 @@ import requests
 # import library to send git clone command
 from subprocess import call
 
+# for sleep function
+import time
+
 # print the name of the program
 print ("""
  _____ _ _   _           _      ______                   _____                    _
@@ -25,6 +28,9 @@ code_to_search = None
 
 # the keyword to identify the repo
 keyword = None
+
+# do the program waits if query rate is exceeded?
+wait = False
 
 # the file in which the code is searched in
 file_that_contains_code = None
@@ -54,6 +60,9 @@ current_result_page = 1
 # the currently number of downloaded repo
 current_found_repo = 0;
 
+# wait and retry time is 300 seconds (5 minutes)
+waiting_time = 300
+
 # github base URL
 github_base_url = 'https://github.com/'
 api_base_url = 'https://api.github.com/'
@@ -65,6 +74,7 @@ parser = argparse.ArgumentParser(description="crawl python repositories by keywo
 
 # parameters
 parser.add_argument("code", help='Code to be searched in Github repositories')
+parser.add_argument("--wait", help='If rate exceeded, keep trying until it is renewed', action="store_true")
 parser.add_argument("-i", "--clientId", help='Your Github OAuth client id')
 parser.add_argument("-s", "--clientSecret", help='Your Github OAuth client secret')
 parser.add_argument("-k", "--keywords", help='Keywords for repository lookup (concatenated with +)')
@@ -93,6 +103,9 @@ if (args.resultLimit):
     results_limit = args.resultLimit
     if (int(results_limit) > 100):
         results_limit = '100'
+if (args.wait):
+    wait = True
+    print("Crawler will wait and try again if query rate is exceeded")
 
 results_per_page = int(results_per_page)
 results_limit = int(results_limit)
@@ -110,24 +123,40 @@ while (total_count > 0 or first_loop):
     # build the url with the keyword and the current result page
     url_repo = api_base_url + search_repo + "?"
     url_repo = (url_repo + "q=" + keyword + "&") if (keyword != None) else (url_repo)
-    url_repo = url_repo + "page=" + str(current_result_page) + "&per_page=" + str(results_per_page) + "&"
+    url_repo = url_repo + "page=" + str(current_result_page) + "&per_page=" + str(results_per_page)
 
     # the request made to github to download the repos
     r_repo = None
 
     # send the request with or without credentials
     if (clientId != None and clientSecret != None):
-        url_repo = url_repo + "client_id=" + clientId  + "&client_secret=" + clientId
+        url_repo = url_repo + "&client_id=" + clientId  + "&client_secret=" + clientId
 
     # send the request
     r_repo = requests.get(url_repo)
 
-    # if the request was not successful
-    if (r_repo.status_code != 200):
+    # if the request was not successful due to rame limitation
+    if (r_repo.status_code == 403):
+
+        # if we have to wait
+        if (wait):
+            print ("query limit rate exceeded. waiting and retrying...")
+            sleep(waiting_time)
+
+        # otherwise exit
+        else:
+            print ("query limit rate exceeded. exiting...")
+            exit(1)
+
+    # if there was another error
+    elif(r_repo.status_code != 200)
         # print error
-        print ("    error while searching repositories: " + str(r_repo.status_code))
+        print ("error while searching repositories: " + str(r_repo.status_code))
+        print ("exiting...")
+        exit(2)
 
     # if the request was successful
+
     else:
         # acquire the JSON
         parsed_json_repo = json.dumps(r_repo.json(), ensure_ascii=False)
@@ -139,7 +168,9 @@ while (total_count > 0 or first_loop):
             first_loop = False
 
         # now, for each result repo in the json (thus <param['per_page']> repositories)
-        for i in range(results_per_page):
+        i = 0
+        # not doing a for loop, because I want more control over i
+        while (i < results_per_page):
             # get the repository name
             repo_name = j_repo['items'][i]['full_name']
 
@@ -150,22 +181,39 @@ while (total_count > 0 or first_loop):
             url_code = api_base_url + search_code + "?q=" + code_to_search
             url_code = (url_code + "+filename:" + file_that_contains_code) if (file_that_contains_code != None) else (url_code)
             url_code = (url_code + "+repo:" + repo_name)
-            url_code = (url_code + "+in:file&")
+            url_code = (url_code + "+in:file")
 
             # the request made to github to download the file in the repo
             r_code = None
 
             # send the request with or without credentials
             if (clientId != None and clientSecret != None):
-                url_code = url_code + "client_id=" + clientId  + "&client_secret=" + clientId
+                url_code = url_code + "&client_id=" + clientId  + "&client_secret=" + clientId
 
             # send the request
             r_code = requests.get(url_code)
 
+            # if the request return code means that we exceeded the query rate limits
+            if(r_code.status_code == 403):
+
+                # if we have to wait, wait
+                if (wait):
+                    print ("    query limit rate exceeded. waiting and retrying...")
+                    sleep(waiting_time)
+
+                # otherwise exit
+                else:
+                    print ("    query limit rate exceeded. exiting...")
+                    exit(1)
+
             # if the request was not successful
-            if (r_code.status_code != 200):
+            elif (r_code.status_code != 200):
                 # print error
-                print ("    error while searching file in repo: " + str(r_code.status_code))
+                print ("    error while searching repositories: " + str(r_code.status_code))
+                print ("    exiting...")
+                exit(2)
+
+
 
             # if the request was successful
             else:
@@ -189,6 +237,9 @@ while (total_count > 0 or first_loop):
 
                         # increment the current found repo
                         current_found_repo = current_found_repo + 1;
+
+                # increment i
+                i = i + 1
 
         # print that the loop (thus the oage) is ended
         print("end of loop. total_count = " + str(total_count) + ", page = " + str(current_result_page) +
