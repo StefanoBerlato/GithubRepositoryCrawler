@@ -91,8 +91,11 @@ if (args.resultPerPage):
     results_per_page = args.resultPerPage
 if (args.resultLimit):
     results_limit = args.resultLimit
-    if (results_limit > 100):
-        results_limit = 100
+    if (int(results_limit) > 100):
+        results_limit = '100'
+
+results_per_page = int(results_per_page)
+results_limit = int(results_limit)
 
 
 # the final result
