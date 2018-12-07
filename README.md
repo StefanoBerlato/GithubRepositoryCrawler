@@ -2,7 +2,7 @@
 Simple Python tool that wraps Github APIs to download repositories searched by keywords, file and code
 
 # Help
-'''
+```
 _____ _ _   _           _      ______                   _____                    _
 |  __ (_) | | |         | |     | ___ \                 /  __ \                  | |
 | |  \/_| |_| |__  _   _| |__   | |_/ /___ _ __   ___   | /  \/_ __ __ ___      _| | ___ _ __
@@ -37,7 +37,7 @@ optional arguments:
  -l RESULTLIMIT, --resultLimit RESULTLIMIT
                        Limit of the number of repo to download. 500 is the
                        default, there is no maximum
-'''
+```
 
 # Example Usage
 
