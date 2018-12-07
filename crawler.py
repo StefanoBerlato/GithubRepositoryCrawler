@@ -29,9 +29,9 @@ keyword = None
 # the file in which the code is searched in
 file_that_contains_code = None
 
-# username and passowrd
-username = None
-password = None
+# clientId and clientSecret
+clientId = None
+clientSecret = None
 
 # how many results per page? 100 is the maximum
 results_per_page = 5
@@ -65,8 +65,8 @@ parser = argparse.ArgumentParser(description="crawl python repositories by keywo
 
 # parameters
 parser.add_argument("code", help='Code to be searched in Github repositories')
-parser.add_argument("-u", "--username", help='Github username for authentication')
-parser.add_argument("-p", "--password", help='Github password for authentication')
+parser.add_argument("-i", "--clientId", help='Your Github OAuth client id')
+parser.add_argument("-s", "--clientSecret", help='Your Github OAuth client secret')
 parser.add_argument("-k", "--keywords", help='Keywords for repository lookup (concatenated with +)')
 parser.add_argument("-f", "--filename", help='File name in which to search for the code')
 parser.add_argument("-r", "--resultPerPage"    , help='Number of results per page. 100 is the maximum and 50 the default')
@@ -83,10 +83,10 @@ if (args.keywords):
     keyword = args.keywords
 if (args.filename):
     file_that_contains_code = args.filename
-if (args.password):
-    password = args.password
-if (args.username):
-    username = args.username
+if (args.clientSecret):
+    clientSecret = args.clientSecret
+if (args.clientId):
+    clientId = args.clientId
 if (args.resultPerPage):
     results_per_page = args.resultPerPage
 if (args.resultLimit):
@@ -108,18 +108,19 @@ while (total_count > 0 or first_loop):
     print("starting a new loop, page: " + str(current_result_page))
 
     # build the url with the keyword and the current result page
-    url_repo = api_base_url + search_repo
-    url_repo = (url_repo + "?q=" + keyword + "&") if (keyword != None) else (url_repo)
-    url_repo = url_repo + "page=" + str(current_result_page) + "&per_page=" + str(results_per_page)
+    url_repo = api_base_url + search_repo + "?"
+    url_repo = (url_repo + "q=" + keyword + "&") if (keyword != None) else (url_repo)
+    url_repo = url_repo + "page=" + str(current_result_page) + "&per_page=" + str(results_per_page) + "&"
 
     # the request made to github to download the repos
     r_repo = None
 
     # send the request with or without credentials
-    if (username != None and password != None):
-        r_repo = requests.get(url_repo, auth=(username, password))
-    else:
-        r_repo = requests.get(url_repo)
+    if (clientId != None and clientSecret != None):
+        url_repo = url_repo + "client_id=" + clientId  + "&client_secret=" + clientId
+
+    # send the request
+    r_repo = requests.get(url_repo)
 
     # if the request was not successful
     if (r_repo.status_code != 200):
@@ -149,16 +150,17 @@ while (total_count > 0 or first_loop):
             url_code = api_base_url + search_code + "?q=" + code_to_search
             url_code = (url_code + "+filename:" + file_that_contains_code) if (file_that_contains_code != None) else (url_code)
             url_code = (url_code + "+repo:" + repo_name)
-            url_code = (url_code + "+in:file")
+            url_code = (url_code + "+in:file&")
 
             # the request made to github to download the file in the repo
             r_code = None
 
             # send the request with or without credentials
-            if (username != None and password != None):
-                r_code = requests.get(url_code, auth=(username, password))
-            else:
-                r_code = requests.get(url_code)
+            if (clientId != None and clientSecret != None):
+                url_code = url_code + "client_id=" + clientId  + "&client_secret=" + clientId
+
+            # send the request
+            r_code = requests.get(url_code)
 
             # if the request was not successful
             if (r_code.status_code != 200):
