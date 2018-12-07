@@ -91,8 +91,8 @@ if (args.resultPerPage):
     results_per_page = args.resultPerPage
 if (args.resultLimit):
     results_limit = args.resultLimit
-    if (resultLimit > 100):
-        resultLimit = 100
+    if (results_limit > 100):
+        results_limit = 100
 
 
 # the final result
@@ -172,9 +172,9 @@ while (total_count > 0 or first_loop):
                 for item in j_code['items']:
 
                     # if the file is the given one and it is at root level
-                    #if (item['name'] == file_that_contains_code and item['path'] == file_that_contains_code):
+                    if (item['name'] == file_that_contains_code and item['path'] == file_that_contains_code):
                     # if the file is the given one (not necessarily at root level)
-                    if (item['name'] == file_that_contains_code):
+                    #if (item['name'] == file_that_contains_code):
 
                         # save the name of the repo
                         android_opensource_app_repositories.append(github_base_url + repo_name)
