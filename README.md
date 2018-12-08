@@ -2,9 +2,11 @@
 Simple Python tool that wraps Github APIs to download repositories searched by keywords, file and code:
 1. First, it makes a repository search (parameters k = keywords, r = results_per_page, l = result_limit)
 2. Then, for each repository, it performs a code search (parameters code (required), f = file_that_contains_code)
-3. Eventually, it downloads (through `git clone`) the repositories that matches the specified parameters
+3. Eventually, it downloads (through `git clone`) the repositories that matches the specified parameters (if it doesn't exists already)
 
-Rememeber that Github limits the number of requests you can do: to increment this number, register your own application at github.com/settings/applications/new and get a client_id and a client_secret
+Rememeber that:
+- Github limits the number of requests you can do: to increment this number, register your own application at github.com/settings/applications/new and get a client_id and a client_secret
+- For each query search, only the first 1000 results may be retrieved, regardless of the pagination. If ask for more, Github will return a 422 error
 
 # Help
 ```

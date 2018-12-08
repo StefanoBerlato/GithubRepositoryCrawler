@@ -10,6 +10,9 @@ from subprocess import call
 # for sleep function
 import time
 
+# for handling folders
+import os
+
 # print the name of the program
 print ("""
  _____ _ _   _           _      ______                   _____                    _
@@ -40,7 +43,7 @@ clientId = None
 clientSecret = None
 
 # how many results per page? 100 is the maximum
-results_per_page = 5
+results_per_page = 50
 
 # the limit of repo to download
 results_limit = 500;
@@ -135,6 +138,10 @@ while (total_count > 0 or first_loop):
     # send the request
     r_repo = requests.get(url_repo)
 
+    # acquire the JSON
+    parsed_json_repo = json.dumps(r_repo.json(), ensure_ascii=False)
+    j_repo = json.loads(parsed_json_repo)
+
     # if the request was not successful due to rame limitation
     if (r_repo.status_code == 403):
 
@@ -151,16 +158,15 @@ while (total_count > 0 or first_loop):
     # if there was another error
     elif(r_repo.status_code != 200):
         # print error
-        print ("error while searching repositories: " + str(r_repo.status_code))
-        print ("exiting...")
+        print ("    error while searching repositories: " + str(r_repo.status_code))
+        print ("    request that cause error is: " + url_repo)
+        print ("    response message (if any) is: " + j_repo["message"])
+        print ("    exiting...")
         exit(2)
 
     # if the request was successful
 
     else:
-        # acquire the JSON
-        parsed_json_repo = json.dumps(r_repo.json(), ensure_ascii=False)
-        j_repo = json.loads(parsed_json_repo)
 
         # if this is the first loop, set the total_count value
         if (first_loop):
@@ -174,72 +180,85 @@ while (total_count > 0 or first_loop):
             # get the repository name
             repo_name = j_repo['items'][i]['full_name']
 
+            # where the repository will be saved iff it satisfies the query parameters
+            repo_path = "__".join(repo_name.split("/"))
+
             # print it
             print ("    analyzing repository: " + repo_name)
 
-            # build the query
-            url_code = api_base_url + search_code + "?q=" + code_to_search
-            url_code = (url_code + "+filename:" + file_that_contains_code) if (file_that_contains_code != None) else (url_code)
-            url_code = (url_code + "+repo:" + repo_name)
-            url_code = (url_code + "+in:file")
+            # if the directory already exists (was downloaded in a previous query)
+            if (os.path.exists("./" + repo_path)):
+                # print meaningful message
+                print ("    repository " + repo_name + " was already cloned, skipping...")
 
-            # the request made to github to download the file in the repo
-            r_code = None
-
-            # send the request with or without credentials
-            if (clientId != None and clientSecret != None):
-                url_code = url_code + "&client_id=" + clientId  + "&client_secret=" + clientId
-
-            # send the request
-            r_code = requests.get(url_code)
-
-            # if the request return code means that we exceeded the query rate limits
-            if(r_code.status_code == 403):
-
-                # if we have to wait, wait
-                if (wait):
-                    print ("    query limit rate exceeded. waiting and retrying...")
-                    time.sleep(waiting_time)
-
-                # otherwise exit
-                else:
-                    print ("    query limit rate exceeded. exiting...")
-                    exit(1)
-
-            # if the request was not successful
-            elif (r_code.status_code != 200):
-                # print error
-                print ("    error while searching repositories: " + str(r_code.status_code))
-                print ("    exiting...")
-                exit(2)
-
-
-
-            # if the request was successful
+            # othewise, go on with the research
             else:
+                # build the query
+                url_code = api_base_url + search_code + "?q=" + code_to_search
+                url_code = (url_code + "+filename:" + file_that_contains_code) if (file_that_contains_code != None) else (url_code)
+                url_code = (url_code + "+repo:" + repo_name)
+                url_code = (url_code + "+in:file")
+
+                # the request made to github to download the file in the repo
+                r_code = None
+
+                # send the request with or without credentials
+                if (clientId != None and clientSecret != None):
+                    url_code = url_code + "&client_id=" + clientId  + "&client_secret=" + clientId
+
+                # send the request
+                r_code = requests.get(url_code)
+
                 # acquire the JSON
                 parsed_json_code = json.dumps(r_code.json(), ensure_ascii=False)
                 j_code = json.loads(parsed_json_code)
 
-                # for each file containing the code (there should be just one but )
-                for item in j_code['items']:
+                # if the request return code means that we exceeded the query rate limits
+                if(r_code.status_code == 403):
 
-                    # if the file is the given one and it is at root level
-                    if (item['name'] == file_that_contains_code and item['path'] == file_that_contains_code):
-                    # if the file is the given one (not necessarily at root level)
-                    #if (item['name'] == file_that_contains_code):
+                    # if we have to wait, wait
+                    if (wait):
+                        print ("    query limit rate exceeded. waiting and retrying...")
+                        time.sleep(waiting_time)
 
-                        # save the name of the repo
-                        android_opensource_app_repositories.append(github_base_url + repo_name)
+                    # otherwise exit
+                    else:
+                        print ("    query limit rate exceeded. exiting...")
+                        exit(1)
 
-                        # clone the repo as <repo_name>
-                        call(["git", "clone", github_base_url + repo_name, "-".join(repo_name.split("/"))] )
+                # if the request was not successful
+                elif (r_code.status_code != 200):
+                    # print error
+                    print ("    error while searching repositories: " + str(r_code.status_code))
+                    print ("    request that cause error is: " + url_code)
+                    print ("    response message (if any) is: " + j_code["message"])
+                    print ("    exiting...")
+                    exit(2)
 
-                        # increment the current found repo
-                        current_found_repo = current_found_repo + 1;
 
-                # increment i
-                i = i + 1
+
+                # if the request was successful
+                else:
+
+                    # for each file containing the code (there should be just one but )
+                    for item in j_code['items']:
+
+                        # if the file is the given one and it is at root level
+                        if (item['name'] == file_that_contains_code and item['path'] == file_that_contains_code):
+                        # if the file is the given one (not necessarily at root level)
+                        #if (item['name'] == file_that_contains_code):
+
+                            # save the name of the repo
+                            android_opensource_app_repositories.append(github_base_url + repo_name)
+
+                            # clone the repo as <repo_path>
+                            call(["git", "clone", github_base_url + repo_name, repo_path] )
+
+                            # increment the current found repo
+                            current_found_repo = current_found_repo + 1;
+
+                    # increment i
+                    i = i + 1
 
         # print that the loop (thus the oage) is ended
         print("end of loop. total_count = " + str(total_count) + ", page = " + str(current_result_page) +
