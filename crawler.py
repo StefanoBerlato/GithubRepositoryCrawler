@@ -176,7 +176,7 @@ while (total_count > 0 or first_loop):
         # now, for each result repo in the json (thus <param['per_page']> repositories)
         i = 0
         # not doing a for loop, because I want more control over i
-        while (i < results_per_page):
+        while (i < results_per_page and i < len(j_repo['items'])):
             # get the repository name
             repo_name = j_repo['items'][i]['full_name']
 
@@ -190,6 +190,9 @@ while (total_count > 0 or first_loop):
             if (os.path.exists("./" + repo_path)):
                 # print meaningful message
                 print ("    repository " + repo_name + " was already cloned, skipping...")
+
+                # increment i
+                i = i + 1
 
             # othewise, go on with the research
             else:
